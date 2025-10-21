@@ -1,9 +1,0 @@
-{
-  "name": "Ebbinghaus Tutor",
-  "version": "1.0.0",
-  "author": "You & Gemini",
-  "description": "A dedicated memory table system for vocabulary learning based on the Ebbinghaus curve.",
-  "type": "backend",
-  "requires": ["extensions"],
-  "entrypoint": "index.js"
-}
