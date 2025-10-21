@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ebbinghaus Tutor</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Ebbinghaus Tutor Control Panel</h1>
+            <div class="controls">
+                <button id="editBtn">Edit Tables</button>
+                <button id="saveBtn" class="hidden">Save Changes</button>
+                <button id="cancelBtn" class="hidden">Cancel</button>
+            </div>
+        </div>
+        <div class="tab-nav">
+            <button class="tab-link active" onclick="openTab(event, 'mastery')">Vocabulary Mastery</button>
+            <button class="tab-link" onclick="openTab(event, 'lists')">Word Lists</button>
+            <button class="tab-link" onclick="openTab(event, 'schedule')">Ebbinghaus Schedule</button>
+            <button class="tab-link" onclick="openTab(event, 'control')">Study Control</button>
+        </div>
+        <div id="mastery" class="tab-content" style="display: block;">
+            <h2>Daily Mastery Tracker</h2>
+            <div id="mastery-table-container"></div>
+        </div>
+        <div id="lists" class="tab-content">
+            <h2>Word List Archive</h2>
+            <div id="lists-table-container"></div>
+        </div>
+        <div id="schedule" class="tab-content">
+            <h2>Ebbinghaus Schedule</h2>
+            <div id="schedule-table-container"></div>
+        </div>
+        <div id="control" class="tab-content">
+            <h2>Study Control</h2>
+            <div id="control-table-container"></div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
