@@ -1,0 +1,9 @@
+{
+    "name": "Ebbinghaus Vocabulary Tutor",
+    "version": "0.1.0",
+    "description": "A custom extension to manage a multi-table Ebbinghaus vocabulary learning system.",
+    "author": "You & Gemini",
+    "entry_character": "index.html",
+    "entry_group": "index.html",
+    "entry_chat": "index.html"
+}
