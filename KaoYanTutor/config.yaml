@@ -1,0 +1,12 @@
+name: KaoYanTutor
+version: "1.0.0"
+description: "A comprehensive vocabulary learning assistant using a multi-table Ebbinghaus system. (考研词汇导师)"
+author: "YourName & Gemini"
+# This section tells SillyTavern which files to load.
+# Do not change these lines.
+js:
+  - script.js
+css:
+  - style.css
+# This specifies the server-side script.
+entry: index.js
