@@ -22,14 +22,24 @@ export function buildTabScheduleHTML(){
 
   return `
   <div style="color:#ddd;font-size:14px;line-height:1.4;margin-bottom:8px;">
-    每天要学的新词(NewList) + 要复习的旧词组(Review1~4)。支持上下/左右滑动。
+    每天要学的新词(NewList) + 要复习的旧词组(Review1~4)。
   </div>
 
-  <div style="border:1px solid rgba(255,255,255,0.25);border-radius:8px;padding:10px;">
+  <div class="ebb-schedule-wrap" style="border:1px solid rgba(255,255,255,0.25);border-radius:8px;">
+    <!-- 竖向滚动层 -->
     <div style="
-      max-height:60vh;overflow:auto;touch-action:pan-y;   /* ↑ 竖向可滑 */
-      -webkit-overflow-scrolling:touch;">
-      <div style="overflow-x:auto;touch-action:pan-x;">  /* ← 横向可滑 */
+      max-height:60vh;                 /* 表高：可上下滑更多行 */
+      overflow-y:auto;
+      overflow-x:hidden;
+      -webkit-overflow-scrolling:touch;
+      touch-action:pan-y;
+      padding:10px;">
+      <!-- 横向滚动层 -->
+      <div style="
+        overflow-x:auto;
+        overflow-y:hidden;
+        -webkit-overflow-scrolling:touch;
+        touch-action:pan-x;">
         <table style="border-collapse:collapse;min-width:720px;background:rgba(255,255,255,0.03);width:100%;">
           <thead style="background:rgba(255,255,255,0.07);position:sticky;top:0;">
             <tr>
@@ -41,9 +51,12 @@ export function buildTabScheduleHTML(){
               <th style="text-align:left;padding:6px 10px;color:#fff;">Review4</th>
             </tr>
           </thead>
-          <tbody>${rows}</tbody>
+          <tbody>
+            ${rows}
+          </tbody>
         </table>
       </div>
     </div>
-  </div>`;
+  </div>
+`;
 }
