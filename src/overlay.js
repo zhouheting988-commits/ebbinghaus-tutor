@@ -72,7 +72,7 @@ export function showOverlay(active='schedule'){
   border:'1px solid rgba(255,255,255,0.2)',
   borderRadius:'12px',padding:'16px',
   width:'90%',maxWidth:'520px',maxHeight:'80vh',
-  overflow:'visible',                 // ← 改成 visible
+  overflow:'auto',                    // ← 这里！
   boxShadow:'0 20px 60px rgba(0,0,0,0.8)'
 });
     overlayEl.appendChild(cardEl);
