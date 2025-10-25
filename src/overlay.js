@@ -68,9 +68,12 @@ export function showOverlay(active='schedule'){
 
     cardEl = document.createElement('div');
     Object.assign(cardEl.style,{
-      background:'rgba(20,20,20,0.95)',color:'#fff',border:'1px solid rgba(255,255,255,0.2)',
-      borderRadius:'12px',padding:'16px',width:'90%',maxWidth:'520px',maxHeight:'80vh',overflow:'auto',
-      boxShadow:'0 20px 60px rgba(0,0,0,0.8)'
+      position:'relative',                 // ← 新增
+      background:'rgba(20,20,20,0.95)',color:'#fff',
+      border:'1px solid rgba(255,255,255,0.2)',
+      borderRadius:'12px',padding:'16px',
+      width:'90%',maxWidth:'520px',maxHeight:'80vh',
+      overflow:'auto',boxShadow:'0 20px 60px rgba(0,0,0,0.8)'
     });
     overlayEl.appendChild(cardEl);
     document.body.appendChild(overlayEl);
@@ -85,9 +88,11 @@ function render(active){
   cardEl.innerHTML = `
     ${headerHTML()}
     ${tabsHTML(active)}
-    <div style="text-align:right;margin-top:12px;">
-      <button id="ebb-close" class="menu_button" style="border-radius:8px;padding:6px 10px;">关闭</button>
-    </div>
+    <button id="ebb-close" aria-label="关闭" style="
+      position:absolute;right:10px;top:10px;
+      width:26px;height:26px;border-radius:50%;
+      background:rgba(255,255,255,0.12);color:#fff;border:1px solid rgba(255,255,255,0.25);
+      font-size:16px;line-height:24px;text-align:center;cursor:pointer;">×</button>
   `;
   cardEl.querySelector('#ebb-close').addEventListener('click', hideOverlay, true);
   cardEl.querySelectorAll('.ebb-tabbtn').forEach(btn=>{
