@@ -12,21 +12,23 @@ function headerHTML(){
   const m = String(now.getMonth()+1).padStart(2,'0');
   const d = String(now.getDate()).padStart(2,'0');
   const snap = getTodaySnapshot();
+
   return `
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-    <div style="display:flex;align-items:center;gap:10px;color:#fff;">
-      <span style="font-size:18px;">🎓</span>
-      <div>
-        <div style="font-size:18px;font-weight:700;">艾宾浩斯词汇导师</div>
-        <div style="opacity:.8;">第 ${snap.currentDay} 天　Round ${snap.round} / 3</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;white-space:nowrap;">
+    <div style="display:flex;align-items:center;gap:10px;white-space:nowrap;">
+      <span style="font-size:18px;line-height:1;">🎓</span>
+      <div style="display:flex;flex-direction:column;gap:2px;white-space:nowrap;">
+        <div style="font-size:16px;font-weight:700;line-height:1;white-space:nowrap;">艾宾浩斯词汇导师</div>
+        <div style="font-size:12px;opacity:.85;line-height:1;white-space:nowrap;">
+          第 ${snap.currentDay} 天 · Round ${snap.round} / 3
+        </div>
       </div>
     </div>
     <div style="background:#d33;color:#fff;border-radius:10px;padding:6px 8px;text-align:center;min-width:54px;">
-      <div style="font-size:12px;">${m}月</div>
-      <div style="font-size:16px;font-weight:700;">${d}</div>
+      <div style="font-size:11px;line-height:1;">${m}月</div>
+      <div style="font-size:15px;font-weight:700;line-height:1;">${d}</div>
     </div>
-  </div>
-  `;
+  </div>`;
 }
 
 function tabsHTML(active='schedule'){
