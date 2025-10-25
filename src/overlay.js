@@ -66,15 +66,15 @@ export function showOverlay(active='schedule'){
     });
     overlayEl.addEventListener('click', e=>{ if(e.target===overlayEl) hideOverlay(); }, true);
 
-    cardEl = document.createElement('div');
     Object.assign(cardEl.style,{
-      position:'relative',                 // ← 新增
-      background:'rgba(20,20,20,0.95)',color:'#fff',
-      border:'1px solid rgba(255,255,255,0.2)',
-      borderRadius:'12px',padding:'16px',
-      width:'90%',maxWidth:'520px',maxHeight:'80vh',
-      overflow:'auto',boxShadow:'0 20px 60px rgba(0,0,0,0.8)'
-    });
+  position:'relative',
+  background:'rgba(20,20,20,0.95)',color:'#fff',
+  border:'1px solid rgba(255,255,255,0.2)',
+  borderRadius:'12px',padding:'16px',
+  width:'90%',maxWidth:'520px',maxHeight:'80vh',
+  overflow:'visible',                 // ← 改成 visible
+  boxShadow:'0 20px 60px rgba(0,0,0,0.8)'
+});
     overlayEl.appendChild(cardEl);
     document.body.appendChild(overlayEl);
   }
