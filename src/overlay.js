@@ -57,29 +57,78 @@ function tabsHTML(active='schedule'){
   `;
 }
 
+// === 替换 showOverlay ===
 export function showOverlay(active='schedule'){
   if(!overlayEl){
     overlayEl = document.createElement('div');
     Object.assign(overlayEl.style,{
-      position:'fixed',left:0,top:0,width:'100vw',height:'100vh',background:'rgba(0,0,0,0.4)',
-      zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px',boxSizing:'border-box'
+      position:'fixed',left:0,top:0,width:'100vw',height:'100vh',
+      background:'rgba(0,0,0,0.4)',zIndex:9999,
+      display:'flex',alignItems:'center',justifyContent:'center',
+      padding:'20px',boxSizing:'border-box'
     });
     overlayEl.addEventListener('click', e=>{ if(e.target===overlayEl) hideOverlay(); }, true);
 
+    cardEl = document.createElement('div');
     Object.assign(cardEl.style,{
-  position:'relative',
-  background:'rgba(20,20,20,0.95)',color:'#fff',
-  border:'1px solid rgba(255,255,255,0.2)',
-  borderRadius:'12px',padding:'16px',
-  width:'90%',maxWidth:'520px',maxHeight:'80vh',
-  overflow:'auto',                    // ← 这里！
-  boxShadow:'0 20px 60px rgba(0,0,0,0.8)'
-});
+      position:'relative',
+      background:'rgba(20,20,20,0.95)',color:'#fff',
+      border:'1px solid rgba(255,255,255,0.2)',
+      borderRadius:'12px',padding:'16px',
+      width:'90%',maxWidth:'520px',maxHeight:'80vh',
+      overflow:'hidden',                       // 外层不滚动
+      boxShadow:'0 20px 60px rgba(0,0,0,0.8)'
+    });
+
+    // 内层可滚容器：所有内容渲染到这里
+    const scroller = document.createElement('div');
+    scroller.id = 'ebb-scroll';
+    Object.assign(scroller.style,{
+      height:'100%', maxHeight:'calc(80vh - 32px)', // 扣掉上下 padding
+      overflowY:'auto', overflowX:'hidden'
+    });
+    cardEl.appendChild(scroller);
+
     overlayEl.appendChild(cardEl);
     document.body.appendChild(overlayEl);
   }
   render(active);
   overlayEl.style.display='flex';
+}
+
+// === 替换 render ===
+function render(active){
+  const scroller = cardEl.querySelector('#ebb-scroll');
+  scroller.innerHTML = `
+    ${headerHTML()}
+    ${tabsHTML(active)}
+  `;
+
+  // 右上角关闭按钮（放在 cardEl 上面，避免被可滚容器裁剪）
+  let closeBtn = cardEl.querySelector('#ebb-close');
+  if(!closeBtn){
+    closeBtn = document.createElement('button');
+    closeBtn.id = 'ebb-close';
+    closeBtn.setAttribute('aria-label','关闭');
+    Object.assign(closeBtn.style,{
+      position:'absolute', right:'10px', top:'10px',
+      width:'26px', height:'26px', borderRadius:'50%',
+      background:'rgba(255,255,255,0.12)', color:'#fff',
+      border:'1px solid rgba(255,255,255,0.25)',
+      fontSize:'16px', lineHeight:'24px', textAlign:'center', cursor:'pointer'
+    });
+    closeBtn.textContent = '×';
+    closeBtn.addEventListener('click', hideOverlay, true);
+    cardEl.appendChild(closeBtn);
+  }
+
+  // 选项卡切换
+  scroller.querySelectorAll('.ebb-tabbtn').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const key = e.currentTarget.getAttribute('data-tab');
+      render(key);
+    }, true);
+  });
 }
 
 export function hideOverlay(){ if(overlayEl) overlayEl.style.display='none'; }
