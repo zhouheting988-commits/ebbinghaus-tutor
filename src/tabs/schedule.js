@@ -21,27 +21,18 @@ export function buildTabScheduleHTML(){
   }).join('');
 
   return `
-  <div style="color:#ddd;font-size:14px;line-height:1.4;margin-bottom:8px;">
-    每天要学的新词(NewList) + 要复习的旧词组(Review1~4)。
-  </div>
-
-  <div class="ebb-schedule-wrap" style="border:1px solid rgba(255,255,255,0.25);border-radius:8px;">
-    <!-- 竖向滚动层 -->
+  <div style="border:1px solid rgba(255,255,255,0.25);border-radius:8px;padding:10px;">
+    <!-- 纵向滚动容器 -->
     <div style="
-      max-height:60vh;                 /* 表高：可上下滑更多行 */
-      overflow-y:auto;
-      overflow-x:hidden;
+      height:56vh;                 /* 固定高度，确保能向下滑到 Day 25 */
+      overflow-y:auto;             /* 竖向滚动交给这里 */
+      overscroll-behavior:contain; /* 避免外层卡片抢滚动 */
       -webkit-overflow-scrolling:touch;
-      touch-action:pan-y;
-      padding:10px;">
-      <!-- 横向滚动层 -->
-      <div style="
-        overflow-x:auto;
-        overflow-y:hidden;
-        -webkit-overflow-scrolling:touch;
-        touch-action:pan-x;">
-        <table style="border-collapse:collapse;min-width:720px;background:rgba(255,255,255,0.03);width:100%;">
-          <thead style="background:rgba(255,255,255,0.07);position:sticky;top:0;">
+    ">
+      <!-- 横向滚动容器 -->
+      <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+        <table style="border-collapse:collapse; min-width:720px; width:100%; background:rgba(255,255,255,0.03);">
+          <thead style="background:rgba(255,255,255,0.07); position:sticky; top:0; z-index:1;">
             <tr>
               <th style="text-align:left;padding:6px 10px;color:#fff;">Day</th>
               <th style="text-align:left;padding:6px 10px;color:#fff;">NewList</th>
@@ -51,9 +42,7 @@ export function buildTabScheduleHTML(){
               <th style="text-align:left;padding:6px 10px;color:#fff;">Review4</th>
             </tr>
           </thead>
-          <tbody>
-            ${rows}
-          </tbody>
+          <tbody>${rows}</tbody>
         </table>
       </div>
     </div>
