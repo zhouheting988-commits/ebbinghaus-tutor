@@ -1,5 +1,5 @@
 // scripts/extensions/third-party/EbbinghausTrainer/src/overlay.js
-import { getTodaySnapshot } from './data.js';
+import { getTodaySnapshot, nextRound, setRound } from './data.js';
 import { buildTabVocabularyHTML } from './tabs/vocabulary.js';
 import { buildTabWordListsHTML }  from './tabs/wordlists.js';
 import { buildTabScheduleHTML }   from './tabs/schedule.js';
@@ -144,32 +144,35 @@ export function hideOverlay() {
 
 function render(active) {
   const scroller = cardEl.querySelector('#ebb-scroll');
+
+  // 先重新生成页面内容（上半是标题header + tabs区域 + 当前tab内容）
   scroller.innerHTML = headerHTML() + tabsHTML(active);
 
-  // ① 切换上面四个tab
+  // ① tab 切换按钮（掌握进度 / 单词清单 / 复习计划 / 学习轮次）
   scroller.querySelectorAll('.ebb-tabbtn').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       const key = e.currentTarget.getAttribute('data-tab');
-      render(key);
+      render(key); // 切换tab后重新渲染
     }, true);
   });
 
-  // ② 只有在“学习轮次”tab时，才去监听轮次按钮
+  // ② 学习轮次页的按钮交互
+  // 只有当 active === 'control' 时才会有这些按钮
   if (active === 'control') {
     scroller.querySelectorAll('.ebb-roundbtn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        const act   = e.currentTarget.getAttribute('data-act');    // 比如 "next"
-        const round = e.currentTarget.getAttribute('data-round');  // 比如 "2"
+        const act   = e.currentTarget.getAttribute('data-act');    // 'next' 或 null
+        const round = e.currentTarget.getAttribute('data-round');  // '1' '2' '3' 或 null
 
         if (act === 'next') {
-          // 用户点了“下一轮 ↗”
-          nextRound();       // 1→2→3→1
+          // “下一轮 ↗”
+          nextRound(); // 1 -> 2 -> 3 -> 1
         } else if (round) {
-          // 用户点了“回到第1轮”、“第2轮(短语)”、“第3轮(句子)”
-          setRound(round);   // 直接设成指定轮
+          // “回到第1轮” / “第2轮(短语)” / “第3轮(句子)”
+          setRound(round);
         }
 
-        // 重新渲染当前tab，让绿色高亮/文案立刻更新
+        // 改完轮次后，重新渲染这个tab，让绿色高亮和文字都立刻更新
         render('control');
       }, true);
     });
