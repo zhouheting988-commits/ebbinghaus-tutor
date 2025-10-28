@@ -33,7 +33,7 @@ function headerHTML() {
   `;
 }
 
-function tabsHTML(active = 'schedule') {
+function tabsHTML(active = 'vocab') {
   const tabs = [
     { key: 'vocab',    name: '掌握进度' },
     { key: 'lists',    name: '单词清单' },
@@ -61,7 +61,7 @@ function tabsHTML(active = 'schedule') {
   `;
 }
 
-export function showOverlay(active = 'schedule') {
+export function showOverlay(active = 'vocab') {
   if (!overlayEl) {
     overlayEl = document.createElement('div');
     Object.assign(overlayEl.style, {
