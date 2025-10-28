@@ -146,10 +146,32 @@ function render(active) {
   const scroller = cardEl.querySelector('#ebb-scroll');
   scroller.innerHTML = headerHTML() + tabsHTML(active);
 
+  // ① 切换上面四个tab
   scroller.querySelectorAll('.ebb-tabbtn').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       const key = e.currentTarget.getAttribute('data-tab');
       render(key);
     }, true);
   });
+
+  // ② 只有在“学习轮次”tab时，才去监听轮次按钮
+  if (active === 'control') {
+    scroller.querySelectorAll('.ebb-roundbtn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const act   = e.currentTarget.getAttribute('data-act');    // 比如 "next"
+        const round = e.currentTarget.getAttribute('data-round');  // 比如 "2"
+
+        if (act === 'next') {
+          // 用户点了“下一轮 ↗”
+          nextRound();       // 1→2→3→1
+        } else if (round) {
+          // 用户点了“回到第1轮”、“第2轮(短语)”、“第3轮(句子)”
+          setRound(round);   // 直接设成指定轮
+        }
+
+        // 重新渲染当前tab，让绿色高亮/文案立刻更新
+        render('control');
+      }, true);
+    });
+  }
 }
