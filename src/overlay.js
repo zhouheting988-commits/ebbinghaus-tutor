@@ -56,7 +56,7 @@ function tabsHTML(active = 'schedule') {
   if (active === 'control')  content = buildTabStudyControlHTML();
 
   return `
-    <div style="display:flex;gap:10px;margin-bottom:10px;">${btns}</div>
+    <div style="display:flex;gap:10px;margin:16px 0 10px;">${btns}</div>
     <div id="ebb-tab-content">${content}</div>
   `;
 }
