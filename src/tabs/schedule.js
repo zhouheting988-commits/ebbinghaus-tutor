@@ -1,75 +1,76 @@
 // scripts/extensions/third-party/EbbinghausTrainer/src/tabs/schedule.js
-import { data } from '../data.js';
 
-/**
- * 复习计划页（表三）
- * - 纵向滚动到 Day 25
- * - 横向可滑动（根据最大 Review 列数自动生成表头/单元格）
- * - 自动适配你给的固定计划（1~25天），不再只显示到 List5
- */
+import { data as getAllData } from '../data.js';
+
+// 复习计划 Tab
+// 展示：Day → 今天要背哪一组（NewList）
+// 注：我们这里先只显示主线“今天新记忆哪组单词”这一列（也就是你的截图那种 Day / ListX）
+//     如果以后你想一起展示 Review 的那些列表，也可以扩展。
+
 export function buildTabScheduleHTML() {
-  const sch = (data() && data().Ebbinghaus_Schedule) || {};
-  const dayKeys = Object.keys(sch);
-  const days = dayKeys.map(Number).sort((a, b) => a - b);
+  const fullData = getAllData(); // 整个 EbbData
+  const scheduleMap = fullData.Ebbinghaus_Schedule || {};
 
-  // 动态计算需要展示的最大 Review 列数（最多 5 列）
-  let maxReviews = 0;
-  for (const d of days) {
-    const rlen = (sch[String(d)]?.Review ?? []).length;
-    if (rlen > maxReviews) maxReviews = rlen;
-  }
-  if (maxReviews > 5) maxReviews = 5; // 保护：最多展示 5 列
+  // 把 key(天数) 全拿出来，转成数字排序，保证是 1,2,3,...25
+  const dayNums = Object.keys(scheduleMap)
+    .map(n => parseInt(n, 10))
+    .filter(n => !isNaN(n))
+    .sort((a, b) => a - b);
 
-  // 构造表头
-  const th = (txt) =>
-    `<th style="text-align:left;padding:8px 10px;color:#fff;white-space:nowrap;">${txt}</th>`;
-  let theadCols = `${th('Day')}${th('NewList')}`;
-  for (let i = 1; i <= maxReviews; i++) theadCols += th(`Review${i}`);
-
-  // 构造数据行
-  const td = (v) =>
-    `<td style="padding:8px 10px;white-space:nowrap;color:#fff;">${v || '…'}</td>`;
-
-  const rows = days
-    .map((day) => {
-      const conf = sch[String(day)] || { NewList: '', Review: [] };
-      const reviewArr = conf.Review || [];
-      let reviewCells = '';
-      for (let i = 0; i < maxReviews; i++) {
-        reviewCells += td(reviewArr[i] || '');
-      }
-      return `<tr>
-        ${td(day)}
-        ${td(conf.NewList || '')}
-        ${reviewCells}
-      </tr>`;
-    })
-    .join('');
-
-  // 根据列数给一个合理的 min-width，避免列挤在一起
-  const minWidth = 240 + (2 + maxReviews) * 140; // 简单估算：列越多表越宽
-
-  return `
-  <div style="border:1px solid rgba(255,255,255,0.25);border-radius:10px;padding:10px;background:rgba(255,255,255,0.03);">
-    <!-- 纵向滚动容器 -->
+  // 表头
+  let rowsHTML = `
     <div style="
-      height:56vh;
-      overflow-y:auto;
-      overscroll-behavior:contain;
-      -webkit-overflow-scrolling:touch;
-      border-radius:8px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:12px 16px;
+      background:rgba(255,255,255,0.08);
+      color:#fff;
+      font-size:18px;
+      font-weight:600;
+      line-height:1.4;
+      border-bottom:1px solid rgba(255,255,255,0.2);
     ">
-      <!-- 横向滚动容器 -->
-      <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
-        <table style="border-collapse:collapse; min-width:${minWidth}px; width:100%;">
-          <thead style="background:rgba(255,255,255,0.07); position:sticky; top:0; z-index:1;">
-            <tr>${theadCols}</tr>
-          </thead>
-          <tbody>
-            ${rows || '<tr><td style="padding:8px 10px;color:#fff;">（无计划数据）</td></tr>'}
-          </tbody>
-        </table>
-      </div>
+      <div style="min-width:4em;">Day</div>
+      <div style="text-align:right;flex:1;">NewList</div>
     </div>
-  </div>`;
+  `;
+
+  // 每一行 Day / ListX
+  rowsHTML += dayNums.map(dayNum => {
+    const plan = scheduleMap[String(dayNum)] || {};
+    const listName = plan.NewList || '(无)';
+
+    return `
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-start;
+        padding:12px 16px;
+        color:#fff;
+        font-size:22px;
+        line-height:1.4;
+        border-bottom:1px solid rgba(255,255,255,0.15);
+        background:transparent;
+      ">
+        <div style="min-width:4em;">${dayNum}</div>
+        <div style="text-align:right;flex:1;">${listName}</div>
+      </div>
+    `;
+  }).join('');
+
+  // 最外层盒子：跟你现在的卡片风格一致，深灰+浅边框+圆角
+  return `
+    <div style="
+      background:rgba(0,0,0,0.4);
+      border:1px solid rgba(255,255,255,0.2);
+      border-radius:12px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.6);
+      color:#fff;
+      overflow:hidden;
+      font-family:inherit;
+    ">
+      ${rowsHTML}
+    </div>
+  `;
 }
