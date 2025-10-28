@@ -363,21 +363,19 @@ function initData() {
 // 其他模块会用到的导出
 // ---------------------------
 export {
-    initData,
-    // getters
-    getTodaySnapshot,
-    getRound,
-    // round control
-    nextRound,
-    setRound,
-    // data bag
-    ensureTodayBucket,
-    addNewWordsToToday,
-    downgradeWordToToday,
-    finalizeTodayAndAdvance,
-    // raw access
-    functionData as data,
-    buildDateBadgeHTML,
+  initData,
+  getTodaySnapshot,
+  getRound,
+  getScheduleForRound,
+  buildLLMStatusString,
+  nextRound,
+  setRound,
+  ensureTodayBucket,
+  addNewWordsToToday,
+  downgradeWordToToday,
+  finalizeTodayAndAdvance,
+  functionData as data,
+  buildDateBadgeHTML
 };
 
 // 给别的模块拉当前整包数据用：
