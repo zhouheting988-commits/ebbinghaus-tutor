@@ -219,22 +219,63 @@ function downgradeWordToToday(word) {
 // ---------------------------
 function finalizeTodayAndAdvance() {
   const todayNum = EbbData.Study_Control.Current_Day;
-  const dayKey = ensureTodayBucket();
+  const dayKey = ensureTodayBucket(); // e.g. "Day_1"
   const bucket = EbbData.Vocabulary_Mastery[dayKey];
 
+  // 1. 今天真正“过关”的词（L5）
   const grads = [...bucket.Level_5_Mastered_Today];
-  const listName = 'List' + todayNum;
 
+  // 2. 今天还没完全掌握的词（L0~L4）
+  const unfinishedPool = [
+    ...bucket.Level_0_New,
+    ...bucket.Level_1,
+    ...bucket.Level_2,
+    ...bucket.Level_3,
+    ...bucket.Level_4,
+  ];
+
+  // 去重一下（防止同词多次出现）
+  const unfinishedSet = Array.from(new Set(unfinishedPool.map(w => String(w).trim()).filter(Boolean)));
+
+  // 3. 把“掌握了”的人打包成 ListN
+  const listName = 'List' + todayNum;
   if (grads.length > 0) {
     EbbData.Word_Lists[listName] = grads;
   }
 
-  // 清空今天L5
+  // 4. 把今天L5清空，因为这批已经毕业
   bucket.Level_5_Mastered_Today = [];
 
-  // 推进到下一天
-  EbbData.Study_Control.Current_Day = todayNum + 1;
+  // （可选）如果你不想以后再改动今天这桶，可以保留它原样；
+  // 我们不会动 bucket.Level_0_New ~ Level_4，它相当于历史记录。
+  // 但要把没过关的词带去明天。
 
+  // 5. 推进到下一天
+  const nextDayNum = todayNum + 1;
+  EbbData.Study_Control.Current_Day = nextDayNum;
+
+  // 确保“明天”的桶存在
+  const nextKey = 'Day_' + nextDayNum;
+  if (!EbbData.Vocabulary_Mastery[nextKey]) {
+    EbbData.Vocabulary_Mastery[nextKey] = {
+      Level_0_New: [],
+      Level_1: [],
+      Level_2: [],
+      Level_3: [],
+      Level_4: [],
+      Level_5_Mastered_Today: [],
+    };
+  }
+  const nextBucket = EbbData.Vocabulary_Mastery[nextKey];
+
+  // 6. 把未掌握的词带给下一天（都丢进 Level_0_New 重新打）
+  for (const w of unfinishedSet) {
+    if (!nextBucket.Level_0_New.includes(w)) {
+      nextBucket.Level_0_New.push(w);
+    }
+  }
+
+  // 7. 存盘
   saveData();
 }
 
@@ -361,19 +402,59 @@ function buildLLMStatusString() {
   };
 
   const roundDesc = roundDescMap[snap.currentRound] || ('Round ' + snap.currentRound);
-  const todayNew = snap.schedule.NewList || '';
-  const todayReview = (snap.schedule.Review && snap.schedule.Review.length)
-    ? snap.schedule.Review.join(', ')
-    : '(无复习任务)';
 
-  return `
-[学习状态]
+  // 1. 今天主背的清单名，比如 "List2"
+  const newListName = snap.schedule.NewList || '';
+  //   它对应的具体词数组：
+  const newListWords = (newListName && EbbData.Word_Lists[newListName])
+    ? EbbData.Word_Lists[newListName]
+    : [];
+
+  // 2. 复习的清单们，比如 ["List1","List2"]
+  const reviewListNames = Array.isArray(snap.schedule.Review) ? snap.schedule.Review : [];
+
+  //   我们把它们展开成 {List1: [...], List2: [...]} 方便AI直接问
+  const reviewBlocks = reviewListNames.map(listName => {
+    const arr = EbbData.Word_Lists[listName] || [];
+    return `${listName} = [${arr.join(', ')}]`;
+  });
+
+  // 3. 为 AI 组织成可读提示
+  //    - 告诉它今天第几天 / 当前轮次
+  //    - 告诉它今日主背清单的内容
+  //    - 告诉它要复习的清单和它们里面的词
+  //    - 最后明确让它用这些词来提问/纠错/造句训练
+  let text = `[学习状态]
 - 今天是第 ${snap.currentDay} 天
 - 当前学习阶段：${roundDesc}
-- 今日主背清单：${todayNew}
-- 今日复习清单：${todayReview}
-请在对话中根据这个状态来引导和监督学习，不要丢失这个上下文。
-  `.trim();
+`;
+
+  // 主背部分
+  text += `\n- 今日主背清单:\n`;
+  if (newListName) {
+    text += `  ${newListName} = [${newListWords.join(', ')}]\n`;
+  } else {
+    text += `  (无主背清单)\n`;
+  }
+
+  // 复习部分
+  text += `\n- 今日复习清单:\n`;
+  if (reviewBlocks.length > 0) {
+    for (const block of reviewBlocks) {
+      text += `  ${block}\n`;
+    }
+  } else {
+    text += `  (无复习任务)\n`;
+  }
+
+  text += `
+请使用这些清单里的词进行检查：
+1. 让我回忆含义 / 拼写 / 例句。
+2. 如果我答错，把这个词当成“未掌握”，说明错误并让我重复。
+3. 如果我答对，把它当成“本日已掌握”。
+`;
+
+  return text.trim();
 }
 
 // ---------------------------
