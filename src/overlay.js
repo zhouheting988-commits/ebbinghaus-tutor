@@ -21,7 +21,7 @@ function headerHTML() {
         <div style="display:flex;flex-direction:column;gap:2px;white-space:nowrap;">
           <div style="font-size:16px;font-weight:700;line-height:1;white-space:nowrap;">艾宾浩斯词汇导师</div>
           <div style="font-size:12px;opacity:.85;line-height:1;white-space:nowrap;">
-            第 ${snap.currentDay} 天 · Round ${snap.round} / 3
+            第 ${snap.currentDay} 天 · Round ${snap.currentRound} / 3
           </div>
         </div>
       </div>
