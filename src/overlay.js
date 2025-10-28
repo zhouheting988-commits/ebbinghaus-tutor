@@ -1,324 +1,218 @@
 // scripts/extensions/third-party/EbbinghausTrainer/src/overlay.js
-//
-// 这个版本是“最后一切正常”的版本：
-// - 顶部标题两行（艾宾浩斯词汇导师 / 第X天 · Round Y/3）
-// - 右上角红色日期牌 + 白色✕按钮
-// - 四个竖排tab按钮（掌握进度 / 词清单 / 复习计划 / 学习轮次）
-// - 默认高亮【学习轮次】
-// - 中间内容区域根据tab切换（调用 tabs/*.js）
-// - 外层点黑幕可关闭
-//
-// 注意：依赖以下模块已经存在并可用：
-//   ./data.js            -> getTodaySnapshot(), getRound()
-//   ./tabs/vocabulary.js -> buildTabVocabularyHTML()
-//   ./tabs/wordlists.js  -> buildTabWordListsHTML()
-//   ./tabs/schedule.js   -> buildTabScheduleHTML()
-//   ./tabs/studycontrol.js -> buildTabStudyControlHTML()
-//
-// 另外 index.js 会 import { showOverlay, hideOverlay } from './src/overlay.js'
-// 并在 toolbar.js 里点学士帽时调用 showOverlay()。
 
 import { getTodaySnapshot, getRound } from './data.js';
-import { buildTabVocabularyHTML }   from './tabs/vocabulary.js';
-import { buildTabWordListsHTML }    from './tabs/wordlists.js';
-import { buildTabScheduleHTML }     from './tabs/schedule.js';
-import { buildTabStudyControlHTML } from './tabs/studycontrol.js';
+import { buildTabScheduleHTML } from './tabs/schedule.js';
+import { buildTabRoundHTML, bindRoundTabEvents } from './tabs/round.js';
+// 如果你还有另外两个页，比如掌握进度/单词清单：保持原来的 import
+// 这里假设你有：
+import { buildTabProgressHTML } from './tabs/progress.js';
+import { buildTabWordsHTML } from './tabs/words.js';
 
-// 全局单例 DOM 引用
-let overlayRootEl = null;
-let overlayCardEl = null;
+let overlayEl = null;
+let cardEl = null;
 
-// 当前激活的 tab
-// 按你当时截图，默认亮的是“学习轮次”
-let activeTab = 'rounds';
+// 我们的激活页，默认是 "progress"（掌握进度）
+let activeTab = 'progress';
 
-// tab 列表定义
-const TAB_DEFS = [
-    { key: 'progress', label: '掌握进度', builder: buildTabVocabularyHTML },
-    { key: 'words',    label: '词清单',   builder: buildTabWordListsHTML },
-    { key: 'schedule', label: '复习计划', builder: buildTabScheduleHTML },
-    { key: 'rounds',   label: '学习轮次', builder: buildTabStudyControlHTML },
-];
+// =====================================================
+// 生成顶部 header + tab 按钮 + 内容
+// =====================================================
+function renderOverlayInnerHTML(){
+    const snap = getTodaySnapshot();
+    const roundVal = getRound(); // 一定是 1/2/3
 
-// 工具：生成当前日期（右上角红牌）
-function getDateParts() {
-    const now = new Date();
-    const m = now.getMonth() + 1; // 1~12
-    const d = now.getDate();      // 1~31
-    return {
-        monthText: m + '月',
-        dayText: d < 10 ? ('0' + d) : String(d),
-    };
-}
+    // 头部区域
+    const headerHTML = `
+        <div style="padding:16px 16px 8px 16px; position:relative;">
+            <button id="ebb_close_btn" style="
+                position:absolute;
+                top:16px;
+                right:16px;
+                background:rgba(0,0,0,0.4);
+                border:1px solid rgba(255,255,255,0.4);
+                color:#fff;
+                border-radius:12px;
+                font-size:16px;
+                line-height:1;
+                padding:6px 10px;
+            ">✕</button>
 
-// 头部区域 HTML
-function buildHeaderHTML() {
-    const snap = getTodaySnapshot(); // { currentDay, ... }
-    const round = getRound() || 1;   // Round 1/3 等
-    const { monthText, dayText } = getDateParts();
-
-    return `
-        <div style="
-            position:relative;
-            padding-right:70px; /* 给右上角留空间放日期和关闭 */
-            color:#fff;
-        ">
-
-            <!-- 标题 + 副标题 -->
-            <div style="display:flex; flex-direction:column; gap:6px;">
+            <div style="color:#fff; line-height:1.4;">
                 <div style="
-                    font-size:18px;
-                    font-weight:600;
                     display:flex;
                     align-items:center;
                     gap:8px;
-                    line-height:1.2;
-                    color:#fff;
-                    flex-wrap:nowrap;
+                    font-size:18px;
+                    font-weight:600;
                 ">
-                    <span style="font-size:20px;line-height:20px;">🎓</span>
+                    <span style="font-size:18px;">🎓</span>
                     <span>艾宾浩斯词汇导师</span>
                 </div>
-
-                <div style="
-                    font-size:15px;
-                    line-height:1.3;
-                    color:#ddd;
-                    font-weight:500;
-                ">
-                    第 ${snap.currentDay} 天 · Round ${round}/3
+                <div style="font-size:14px;color:#ccc;margin-top:4px;">
+                    第 ${snap.currentDay} 天 ・ Round ${roundVal} / 3
                 </div>
             </div>
-
-            <!-- 右上角红色日期牌 -->
-            <div style="
-                position:absolute;
-                top:0;
-                right:36px;
-                background:#d32f2f;
-                color:#fff;
-                border-radius:6px;
-                padding:6px 8px;
-                min-width:48px;
-                text-align:center;
-                font-weight:600;
-                line-height:1.2;
-                box-shadow:0 4px 10px rgba(0,0,0,0.6);
-                font-size:14px;
-            ">
-                <div>${monthText}</div>
-                <div style="font-size:16px;">${dayText}</div>
-            </div>
-
-            <!-- 关闭按钮 -->
-            <button id="ebb_close_btn" style="
-                position:absolute;
-                top:0;
-                right:0;
-                width:32px;
-                height:32px;
-                border-radius:999px;
-                background:rgba(0,0,0,0.4);
-                border:1px solid rgba(255,255,255,0.5);
-                color:#fff;
-                font-size:16px;
-                font-weight:600;
-                line-height:30px;
-                text-align:center;
-                cursor:pointer;
-            ">✕</button>
         </div>
     `;
-}
 
-// 顶部四个竖排 tab 按钮
-function buildTabsNavHTML() {
-    // styling 公共部分
-    const baseBtnStyle = `
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        min-width:64px;
-        min-height:110px;
-        padding:12px 16px;
-        border-radius:8px;
-        border:1px solid rgba(255,255,255,0.35);
-        background:rgba(0,0,0,0.4);
-        color:#fff;
-        font-size:22px;
-        font-weight:500;
-        line-height:1.2;
-        writing-mode:vertical-rl;
-        text-orientation:upright;
-        cursor:pointer;
-        user-select:none;
-    `;
+    // 四个大按钮（tab 切换）
+    function tabBtn(id, label, isActive){
+        return `
+        <button
+            id="${id}"
+            style="
+                flex:1;
+                min-width:70px;
+                background:${isActive ? 'rgb(15,100,25)' : 'rgba(0,0,0,0.4)'};
+                border:1px solid ${isActive ? 'rgb(80,200,100)' : 'rgba(255,255,255,0.4)'};
+                color:#fff;
+                border-radius:10px;
+                padding:12px 10px;
+                font-size:20px;
+                line-height:1.4;
+                font-weight:${isActive ? '600' : '400'};
+                text-align:center;
+            "
+        >${label}</button>`;
+    }
 
-    return `
+    const tabsHTML = `
         <div style="
             display:flex;
-            flex-wrap:nowrap;
             gap:12px;
-            margin-top:16px;
-            margin-bottom:16px;
+            padding:0 16px;
+            margin-top:12px;   /* 这里就是把按钮区往下“拉开”一点 */
+            flex-wrap:nowrap;
+            overflow-x:auto;
+            -webkit-overflow-scrolling:touch;
         ">
-            ${TAB_DEFS.map(tab => {
-                // 绿色高亮样式（activeTab）
-                const isActive = (tab.key === activeTab);
-                const extraStyle = isActive
-                    ? `
-                        background:rgba(0,128,0,0.6);
-                        border:1px solid rgba(0,255,0,0.6);
-                    `
-                    : ``;
-
-                return `
-                <div
-                    class="ebb-nav-btn"
-                    data-tab="${tab.key}"
-                    style="${baseBtnStyle} ${extraStyle}"
-                >
-                    ${tab.label}
-                </div>`;
-            }).join('')}
+            ${tabBtn('ebb_tab_progress','掌握进度',   activeTab==='progress')}
+            ${tabBtn('ebb_tab_words','单词清单',       activeTab==='words')}
+            ${tabBtn('ebb_tab_plan','复习计划',        activeTab==='plan')}
+            ${tabBtn('ebb_tab_round','学习轮次',       activeTab==='round')}
         </div>
     `;
-}
 
-// 中间内容区：根据 activeTab 取对应 builder
-function buildActiveTabContentHTML() {
-    const def = TAB_DEFS.find(t => t.key === activeTab);
-    if (!def) {
-        return `<div style="color:#fff;">(未知面板)</div>`;
+    // 内容区：根据 activeTab 决定
+    let bodyHTML = '';
+    if(activeTab === 'progress'){
+        bodyHTML = buildTabProgressHTML();
+    }else if(activeTab === 'words'){
+        bodyHTML = buildTabWordsHTML();
+    }else if(activeTab === 'plan'){
+        bodyHTML = buildTabScheduleHTML();
+    }else if(activeTab === 'round'){
+        bodyHTML = buildTabRoundHTML(); // 这个里会显示 Round X
     }
-    // 每个 builder() 自己返回一段 <div> ... or table ... HTML
-    const inner = def.builder();
 
-    return `
-        <div style="
-            border:1px solid rgba(255,255,255,0.3);
-            border-radius:8px;
-            background:rgba(0,0,0,0.2);
+    // 包一层内容容器，留点内边距，滚动什么的由各自 tab 里处理
+    const contentHTML = `
+        <div id="ebb_tab_content" style="
             padding:16px;
             color:#fff;
-            font-size:15px;
+            font-size:14px;
             line-height:1.5;
-            max-height:60vh;
-            overflow:hidden;
         ">
-
-            ${inner}
-
+            ${bodyHTML}
         </div>
     `;
+
+    return headerHTML + tabsHTML + contentHTML;
 }
 
-// 整个卡片内部 HTML
-function buildOverlayInnerHTML() {
-    return `
-        ${buildHeaderHTML()}
-        ${buildTabsNavHTML()}
-        ${buildActiveTabContentHTML()}
-    `;
-}
+// =====================================================
+// 重新渲染整张卡片 (含 header / tabs / content)
+// =====================================================
+function rerenderOverlayCard(){
+    if(!cardEl) return;
+    cardEl.innerHTML = renderOverlayInnerHTML();
 
-// 把 overlayRootEl / overlayCardEl 建好（如果还没建）
-function ensureOverlayDOM() {
-    if (!overlayRootEl) {
-        overlayRootEl = document.createElement('div');
-        overlayRootEl.id = 'ebb_overlay_root';
-        overlayRootEl.style.position = 'fixed';
-        overlayRootEl.style.left = '0';
-        overlayRootEl.style.top = '0';
-        overlayRootEl.style.width = '100vw';
-        overlayRootEl.style.height = '100vh';
-        overlayRootEl.style.background = 'rgba(0,0,0,0.4)';
-        overlayRootEl.style.zIndex = '9999';
-        overlayRootEl.style.display = 'flex';
-        overlayRootEl.style.alignItems = 'center';
-        overlayRootEl.style.justifyContent = 'center';
-        overlayRootEl.style.padding = '20px';
-        overlayRootEl.style.boxSizing = 'border-box';
-
-        // 点击黑幕空白区域关闭
-        overlayRootEl.addEventListener('click', (ev) => {
-            if (ev.target === overlayRootEl) {
-                hideOverlay();
-            }
-        }, true);
-
-        overlayCardEl = document.createElement('div');
-        overlayCardEl.id = 'ebb_overlay_card';
-        overlayCardEl.style.position = 'relative';
-        overlayCardEl.style.background = 'rgba(20,20,20,0.95)';
-        overlayCardEl.style.borderRadius = '12px';
-        overlayCardEl.style.border = '1px solid rgba(255,255,255,0.2)';
-        overlayCardEl.style.color = '#fff';
-        overlayCardEl.style.width = '90%';
-        overlayCardEl.style.maxWidth = '480px';
-        overlayCardEl.style.maxHeight = '80vh';
-        overlayCardEl.style.overflowY = 'auto';
-        overlayCardEl.style.padding = '16px';
-        overlayCardEl.style.boxShadow = '0 20px 60px rgba(0,0,0,0.8)';
-
-        overlayRootEl.appendChild(overlayCardEl);
-        document.body.appendChild(overlayRootEl);
-    }
-}
-
-// 重新渲染（比如切 tab 后调用）
-function rerenderOverlay() {
-    if (!overlayCardEl) return;
-    overlayCardEl.innerHTML = buildOverlayInnerHTML();
-
-    // 重新给关闭按钮和tab按钮绑定事件
-    bindOverlayInnerEvents();
-}
-
-// 给当前卡片内的元素（关闭按钮、tab按钮）绑事件
-function bindOverlayInnerEvents() {
-    // 关闭按钮
-    const closeBtn = overlayCardEl.querySelector('#ebb_close_btn');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', (ev) => {
+    // 绑定关闭
+    const closeBtn = cardEl.querySelector('#ebb_close_btn');
+    if(closeBtn){
+        closeBtn.addEventListener('click', (ev)=>{
             ev.preventDefault();
             ev.stopPropagation();
             hideOverlay();
         }, true);
     }
 
-    // tab 切换按钮
-    overlayCardEl.querySelectorAll('.ebb-nav-btn').forEach(btn => {
-        btn.addEventListener('click', (ev) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-            const tabKey = btn.getAttribute('data-tab');
-            if (tabKey && tabKey !== activeTab) {
-                activeTab = tabKey;
-                rerenderOverlay();
+    // 绑定 tab 切换
+    const bindTab = (id,name)=>{
+        const btn = cardEl.querySelector('#'+id);
+        if(btn){
+            btn.addEventListener('click', ()=>{
+                activeTab = name;
+                rerenderOverlayCard(); // 切一次 tab 重新渲
+            });
+        }
+    };
+    bindTab('ebb_tab_progress','progress');
+    bindTab('ebb_tab_words','words');
+    bindTab('ebb_tab_plan','plan');
+    bindTab('ebb_tab_round','round');
+
+    // 如果是“学习轮次”页，绑定它内部的按钮（下一轮 / 第几轮）
+    if(activeTab === 'round'){
+        const contentRoot = cardEl.querySelector('#ebb_tab_content');
+        if(contentRoot){
+            bindRoundTabEvents(contentRoot);
+        }
+    }
+}
+
+// =====================================================
+// 对外：显示/隐藏
+// =====================================================
+export function showOverlay(){
+    // 打开时，默认回到第一个tab“掌握进度”
+    activeTab = 'progress';
+
+    if(!overlayEl){
+        overlayEl = document.createElement('div');
+        overlayEl.id = 'ebb_overlay_root';
+        overlayEl.style.position = 'fixed';
+        overlayEl.style.left = '0';
+        overlayEl.style.top = '0';
+        overlayEl.style.width = '100vw';
+        overlayEl.style.height = '100vh';
+        overlayEl.style.background = 'rgba(0,0,0,0.5)';
+        overlayEl.style.zIndex = '9999';
+        overlayEl.style.display = 'flex';
+        overlayEl.style.alignItems = 'center';
+        overlayEl.style.justifyContent = 'center';
+        overlayEl.style.padding = '20px';
+        overlayEl.style.boxSizing = 'border-box';
+
+        // 点击遮罩空白处关闭
+        overlayEl.addEventListener('click',(ev)=>{
+            if(ev.target === overlayEl){
+                hideOverlay();
             }
         }, true);
-    });
+
+        cardEl = document.createElement('div');
+        cardEl.id = 'ebb_overlay_card';
+        cardEl.style.background = 'rgba(20,20,20,0.95)';
+        cardEl.style.borderRadius = '14px';
+        cardEl.style.border = '1px solid rgba(255,255,255,0.25)';
+        cardEl.style.color = '#fff';
+        cardEl.style.width = '90%';
+        cardEl.style.maxWidth = '460px';
+        cardEl.style.maxHeight = '80vh';
+        cardEl.style.overflow = 'hidden'; // 让内部自己滚
+        cardEl.style.boxShadow = '0 20px 60px rgba(0,0,0,0.8)';
+
+        overlayEl.appendChild(cardEl);
+        document.body.appendChild(overlayEl);
+    }
+
+    rerenderOverlayCard();
+    overlayEl.style.display = 'flex';
 }
 
-// 对外开放：显示面板
-export function showOverlay() {
-    // 确保 DOM 存在
-    ensureOverlayDOM();
-
-    // 每次打开，都以 “学习轮次” 作为初始高亮（= 你最后正常截图时的逻辑）
-    activeTab = 'rounds';
-
-    // 渲染内容
-    rerenderOverlay();
-
-    // 显示
-    overlayRootEl.style.display = 'flex';
-}
-
-// 对外开放：隐藏面板
-export function hideOverlay() {
-    if (overlayRootEl) {
-        overlayRootEl.style.display = 'none';
+export function hideOverlay(){
+    if(overlayEl){
+        overlayEl.style.display = 'none';
     }
 }
